@@ -1,14 +1,36 @@
-<!DOCTYPE html>
-<html>
+<!doctype html>
+<html lang="en">
 
 <head>
-    <meta charset="UTF-8">
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <meta name="description" content="GIS source tree analysis">
+    <meta name="author" content="antonychacha">
+
     <title>GIS source tree analysis</title>
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.1.3/css/bootstrap.min.css" integrity="sha384-MCw98/SFnGE8fJT3GXwEOngsV7Zt27NXFoaoApmYm81iuXoPkFOJwJ8ERdknLPMO"
         crossorigin="anonymous">
     <style>
+        html {
+            position: relative;
+            min-height: 100%;
+        }
+
         body {
             font-size: 12px;
+            margin-bottom: 60px;
+            /* Margin bottom by footer height */
+        }
+
+        .footer {
+            position: absolute;
+            bottom: 0;
+            width: 100%;
+            height: 60px;
+            /* Set the fixed height of the footer here */
+            line-height: 60px;
+            /* Vertically center the text there */
+            background-color: #f5f5f5;
         }
 
         .highlight {
@@ -18,8 +40,11 @@
 </head>
 
 <body>
-    <div class="container" style="margin-top: 50px;">
+
+    <!-- Begin page content -->
+    <div class="container" role="main" style="margin-top: 50px;">
         <h3>Source tree report for [/mnt/Files/projects/turnquest-gis/src/TQGIS], from 244 java files</h3>
+        <hr>
         <div class="row">
             <div class="col-md-2">
                 <p>
@@ -28,10 +53,21 @@
                 </p>
             </div>
             <div class="col-md-9">
-                <input type="text" id="search" class="form-control" placeholder="Search for anything. A procedure, package, java file, etc">
-                <hr>
-                <div class="context">
-                    <table>
+                <ul class="nav nav-tabs" id="myTab" role="tablist" style="margin-bottom: 10px;">
+                    <li class="nav-item">
+                        <a class="nav-link active" id="java-report" data-toggle="tab" href="#java" role="tab" aria-controls="home" aria-selected="true">Java files report</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" id="backend-report" data-toggle="tab" href="#backend" role="tab" aria-controls="profile" aria-selected="false">Backend report</a>
+                    </li>
+                </ul>
+                <div class="tab-content" id="myTabContent">
+                    <div class="tab-pane fade show active" id="java" role="tabpanel" aria-labelledby="java-report">
+                        <input type="text" id="search" class="form-control" placeholder="Search for anything. A procedure, package, java file, etc">
+                        <hr>
+                        <p class="help-text" id="search-info"></p>
+                        <div class="context">
+                            <table>
     <tr>
         <th>JavaFile</th>
         <th>BackendCalls</th>
@@ -1258,15 +1294,32 @@
         <td>1</td>
     </tr>
 </table>
+                        </div>
+                    </div>
+                    <div class="tab-pane fade" id="backend" role="tabpanel" aria-labelledby="backend-report">
+                        <div class="alert alert-info">
+                            <p>
+                                Not complete
+                            </p>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
+
+    <footer class="footer">
+        <div class="container">
+            <span class="text-muted">Place sticky footer content here.</span>
+        </div>
+    </footer>
     <script src="https://code.jquery.com/jquery-3.3.1.min.js" integrity="sha256-FgpCb/KJQlLNfOu91ta32o/NMZxltwRo8QtmkMRdAu8="
         crossorigin="anonymous"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/mark.js/8.11.1/jquery.mark.js" integrity="sha256-m4GLhtBF1Ue31vdmii9AEzvSYnBTJFzYkVToaD047Z4="
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.1.3/js/bootstrap.min.js" integrity="sha384-ChfqqxuZUCnJSK3+MXmPNIyE6ZbWh2IMqE241rYiqJxyMiZ6OW/JmZQ5stwEULTy"
         crossorigin="anonymous"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery.tablesorter/2.30.7/js/jquery.tablesorter.min.js"></script>
     <script>
+        // https://johannburkard.de/blog/programming/javascript/highlight-javascript-text-higlighting-jquery-plugin.html
         jQuery.fn.highlight = function (pat) {
             function innerHighlight(node, pat) {
                 var skip = 0;
@@ -1307,32 +1360,41 @@
         };
     </script>
     <script>
-        $('table').attr('id', 'table').addClass('table table-striped table-bordered')
-        var $rows = $('#table tr');
-        $('#search').keyup(debounce(function () {
-            var val = $.trim($(this).val()).replace(/ +/g, ' ').toLowerCase();
+        (function ($) {
+            $('table').attr('id', 'table').addClass('table table-striped table-bordered tablesorter').tablesorter();
+            var $rows = $('#table tr');
+            $('#search').keyup(debounce(function () {
+                var val = $.trim($(this).val()).replace(/ +/g, ' ').toLowerCase();
+                if (val.length === 0) {
+                    $('td').removeHighlight();
+                    $('#search-info').hide();
+                    $rows.show();
+                } else {
+                    $('td').highlight(val);
+                    $('#search-info').show().html('Found ' + $('span.highlight').length + ' results from search.');
+                    $rows.show().filter(function () {
+                        var t = $(this).text();
+                        var text = t.replace(/\s+/g, ' ').toLowerCase();
+                        return !~text.indexOf(val);
+                    }).hide();
+                }
+            }, 300));
 
-            $rows.show().filter(function () {
-                var t = $(this).text();
-                var text = t.replace(/\s+/g, ' ').toLowerCase();
-                return !~text.indexOf(val);
-            }).hide();
-        }, 300));
-
-        function debounce(func, wait, immediate) {
-            var timeout;
-            return function () {
-                var context = this, args = arguments;
-                var later = function () {
-                    timeout = null;
-                    if (!immediate) func.apply(context, args);
+            function debounce(func, wait, immediate) {
+                var timeout;
+                return function () {
+                    var context = this, args = arguments;
+                    var later = function () {
+                        timeout = null;
+                        if (!immediate) func.apply(context, args);
+                    };
+                    var callNow = immediate && !timeout;
+                    clearTimeout(timeout);
+                    timeout = setTimeout(later, wait);
+                    if (callNow) func.apply(context, args);
                 };
-                var callNow = immediate && !timeout;
-                clearTimeout(timeout);
-                timeout = setTimeout(later, wait);
-                if (callNow) func.apply(context, args);
             };
-        };
+        }(jQuery))
     </script>
 </body>
 
